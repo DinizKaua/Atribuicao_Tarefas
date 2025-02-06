@@ -42,6 +42,9 @@ void subtraimatriz(int **matriz, int tam){
 
 //2° ETAPA DO ALGORÍTIMO - VERIFICAR DESIGNAÇÃO
 int verif_designacao(int **matriz, int tam, int *designados){
+      for(int i = 0; i<tam;i++){
+        designados[i] = -1;
+    }
 
     // VETORES QUE IDENTIFICAM LINHAS E COLUNAS DESIGNADAS
     int linha[tam], coluna[tam]; 
@@ -69,6 +72,7 @@ int verif_designacao(int **matriz, int tam, int *designados){
     for(int i = 0; i<tam;i++){
         printf("%d ", designados[i]);
     }
+    printf("\n");
 
     if(contador == tam) return 1;
     else return 0;
@@ -76,7 +80,7 @@ int verif_designacao(int **matriz, int tam, int *designados){
 
 int main(){
     //ABRINDO ARQUIVO
-    FILE *arquivo = fopen("C:\\Users\\willy\\Desktop\\Atribuicao_Tarefas\\teste.txt","r");
+    FILE *arquivo = fopen("../teste.txt","r");
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return 1;
@@ -93,11 +97,13 @@ int main(){
         pontmat[i]=malloc(tam*sizeof(int));
     }
 
-    //LENDO E MOSTRANDO MATRIZ DO ARQUIVO
+    //LENDO E MOSTRANDO MATRIZ DO ARQUIVO E CRIANDO UMA CÓPIA ESTÁTICA DESSA MATRIZ
+    int matrizCopia[tam][tam];
     printf("Matriz lida:\n");
     for (int i = 0; i<tam; i++){
         for (int j = 0; j<tam; j++){
             fscanf(arquivo, "%d", &pontmat[i][j]);
+            matrizCopia[i][j] = pontmat[i][j];
             printf("%d ", pontmat[i][j]);
         }
         printf("\n");
@@ -106,12 +112,20 @@ int main(){
     //CHAMANDO A ETAPA 1
     subtraimatriz(pontmat,tam);
 
-    //CHAMANDO A ETAPA DOIS
+    //CHAMANDO A ETAPA DOIS E A TRÊS
     int *zerosDesignados = (int*) malloc(tam*sizeof(int)); //endereço dos zeros designados
-    for(int i = 0; i<tam;i++){
-        zerosDesignados[i] = -1;
+    while(verif_designacao(pontmat, tam, zerosDesignados)==0){
+        //função do joão
     }
-    verif_designacao(pontmat, tam, zerosDesignados);  
+
+    // SOMANDO OS TEMPOS COM O ENDEREÇO DAS DESIGNAÇÕES
+    int somaTempo = 0;
+    for(int i = 0; i<tam;i++){
+        somaTempo += matrizCopia[i][zerosDesignados[i]]; 
+    }
+
+    // EXIBINDO A SOMA TOTAL DE UNIDADES DE TEMPO
+    printf("Resultado: %d\n", somaTempo);
 
     //LIBERANDO MEMORIA ALOCADA PARA A MATRIZ E ARRAYS
     for (int i = 0; i<tam; i++){
