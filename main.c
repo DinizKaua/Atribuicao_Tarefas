@@ -41,55 +41,107 @@ void subtraimatriz(int **matriz, int tam){
     }*/
           
 }
-//2° ETAPA DO ALGORÍTIMO - VERIFICAR DESIGNAÇÃO
-int contZeros(int **matriz, int tam, int indice){ // contar quantidade de zeros da coluna
-    int qtdZeros = 0;
-    for(int i = 0; i<tam;i++){
-        if(matriz[i][indice]==0) qtdZeros++;
-    }
-    return qtdZeros;
-}
-int verif_designacao(int **matriz, int tam, int *designados){ // tentar fazer uma atribuição ótima
-      for(int i = 0; i<tam;i++){
-        designados[i] = -1;
-    }
 
-    // VETORES QUE IDENTIFICAM LINHAS E COLUNAS DESIGNADAS
-    int linha[tam], coluna[tam]; 
-     for(int i = 0; i<tam; i++){
-        linha[i] = 0;
-        coluna[i] = 0;
-    }
-    // "COBRINDO" OS ZEROS E PEGANDO O ENDEREÇO DELES
-    int contador = 0;
-    for(int i = 0; i<tam;i++){ 
-        int temp = -1;
-        int aux = tam + 1;
-        for(int j = 0; j<tam;j++){
-            if(linha[i] == 0 && coluna[j] == 0 && matriz[i][j] == 0){
-                if(contZeros(matriz, tam, j)<aux){
-                    temp = j;
-                    aux = contZeros(matriz, tam, j);
-                }             
+/*
+   Função auxiliar que, dada uma linha (row), tenta encontrar (via DFS)
+   uma atribuição de coluna (col) para essa linha, possivelmente “desfazendo”
+   uma atribuição anterior se necessário.
+   
+   Parâmetros:
+   - row: índice da linha atual.
+   - tam: tamanho da matriz (número de linhas/colunas).
+   - matriz: matriz de custos (ou benefícios), onde zeros indicam candidatos à atribuição.
+   - match: vetor de tamanho 'tam' onde match[j] indica qual linha está designada à coluna j (ou -1 se nenhuma).
+   - visited: vetor auxiliar para marcar quais colunas já foram visitadas nesta chamada.
+   
+   Retorna 1 (verdadeiro) se foi possível encontrar/ajustar uma atribuição para a linha 'row';
+   caso contrário, retorna 0.
+*/
+int dfs(int row, int tam, int **matriz, int *match, int *visited) {
+    for (int col = 0; col < tam; col++) {
+        // Se há um zero na posição (row, col) e essa coluna ainda não foi visitada
+        if (matriz[row][col] == 0 && !visited[col]) {
+            visited[col] = 1;  // marca a coluna como visitada
+            // Se a coluna não está designada ou se conseguimos "desalocar" a linha que estava designada
+            if (match[col] == -1 || dfs(match[col], tam, matriz, match, visited)) {
+                match[col] = row;  // atribui a coluna 'col' à linha 'row'
+                return 1;
             }
         }
-        if(temp != -1) {
-            coluna[temp] = 1;
-            linha[i] = 1;
-            designados[i] = temp;
-            contador++;
+    }
+    return 0;
+}
+
+/*
+   Função verif_designacao – tenta encontrar uma atribuição ótima dos zeros usando
+   um algoritmo de casamento bipartido. Se for possível designar uma coluna (com zero)
+   para cada linha, retorna 1; caso contrário, retorna 0.
+   
+   Parâmetros:
+   - matriz: matriz quadrada de inteiros (geralmente o resultado de operações prévias do método húngaro).
+   - tam: dimensão da matriz.
+   - designados: vetor de tamanho 'tam' que, ao final, conterá, para cada linha i, o índice da coluna designada
+     (ou -1 se a linha não tiver sido atribuída).
+*/
+int verif_designacao(int **matriz, int tam, int *designados) {
+    // Inicializa o vetor de designações para as linhas com -1 (nenhuma designação)
+    for (int i = 0; i < tam; i++) {
+        designados[i] = -1;
+    }
+    
+    // Vetor 'match' para as colunas: match[j] guarda a linha atualmente designada à coluna j
+    int *match = malloc(tam * sizeof(int));
+    if (match == NULL) {
+        printf("Erro de alocacao.\n");
+        return 0;
+    }
+    for (int j = 0; j < tam; j++) {
+        match[j] = -1;
+    }
+    
+    int matchingCount = 0;  // contador de linhas que foram atribuídas
+    
+    // Para cada linha, tenta encontrar (via DFS) uma coluna com zero que possa ser atribuída
+    for (int row = 0; row < tam; row++) {
+        // Vetor para marcar quais colunas já foram visitadas nesta iteração
+        int *visited = calloc(tam, sizeof(int));
+        if (visited == NULL) {
+            printf("Erro de alocacao.\n");
+            free(match);
+            return 0;
+        }
+        if (dfs(row, tam, matriz, match, visited)) {
+            matchingCount++;
+        }
+        free(visited);
+    }
+    
+    // Se o casamento máximo encontrou uma designação para todas as linhas, inverte o mapeamento
+    // para que designados[i] seja a coluna atribuída à linha i.
+    for (int col = 0; col < tam; col++) {
+        if (match[col] != -1) {
+            designados[match[col]] = col;
         }
     }
-    /* IMPRIMINDO O ENDEREÇO DOS ZEROS DESIGINADOS (-1 não tem designação)
+    
+    /* Imprime os endereços (índices) dos zeros designados (-1 indica que a linha não foi atribuída)
     printf("\nEndereco dos zeros designados: ");
-    for(int i = 0; i<tam;i++){
+    for (int i = 0; i < tam; i++) {
         printf("%d ", designados[i]);
     }
     printf("\n\n");
     */
-    if(contador == tam) return 1;
-    else return 0;
+    
+    free(match);
+    
+    // Se conseguimos designar todas as linhas, retorna 1; caso contrário, retorna 0.
+    if (matchingCount == tam)
+        return 1;
+    else
+        return 0;
 }
+
+
 // 3° ETAPA DO ALGORÍTIMO - REDUÇÃO ADICIONAL DA MATRIZ
 void cobrimento(int **matriz, int tam, int *designados){
 
@@ -187,7 +239,7 @@ void cobrimento(int **matriz, int tam, int *designados){
 
 int main(){
     //ABRINDO ARQUIVO
-    FILE *arquivo = fopen("../teste.txt","r");
+    FILE *arquivo = fopen("../assign600.txt","r");
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return 1;
