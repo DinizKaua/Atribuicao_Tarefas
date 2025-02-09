@@ -2,8 +2,8 @@
 #include <limits.h>
 #include <stdlib.h>
 
-
 // 1° ETAPA DO ALGORÍTIMO - CONSISTE EM REDUZIR A MATRIZ
+
 void subtraimatriz(int **matriz, int tam){
     //ENCONTRAR O MENOR ELEMENTO EM CADA LINHA
     for (int i = 0; i <tam; i++){
@@ -38,33 +38,20 @@ void subtraimatriz(int **matriz, int tam){
             printf("%d ", matriz[i][j]);
         }
         printf("\n");
-    }*/
-          
+    }*/  
 }
 
-/*
-   Função auxiliar que, dada uma linha (row), tenta encontrar (via DFS)
-   uma atribuição de coluna (col) para essa linha, possivelmente “desfazendo”
-   uma atribuição anterior se necessário.
-   
-   Parâmetros:
-   - row: índice da linha atual.
-   - tam: tamanho da matriz (número de linhas/colunas).
-   - matriz: matriz de custos (ou benefícios), onde zeros indicam candidatos à atribuição.
-   - match: vetor de tamanho 'tam' onde match[j] indica qual linha está designada à coluna j (ou -1 se nenhuma).
-   - visited: vetor auxiliar para marcar quais colunas já foram visitadas nesta chamada.
-   
-   Retorna 1 (verdadeiro) se foi possível encontrar/ajustar uma atribuição para a linha 'row';
-   caso contrário, retorna 0.
-*/
-int dfs(int row, int tam, int **matriz, int *match, int *visited) {
-    for (int col = 0; col < tam; col++) {
-        // Se há um zero na posição (row, col) e essa coluna ainda não foi visitada
-        if (matriz[row][col] == 0 && !visited[col]) {
-            visited[col] = 1;  // marca a coluna como visitada
-            // Se a coluna não está designada ou se conseguimos "desalocar" a linha que estava designada
-            if (match[col] == -1 || dfs(match[col], tam, matriz, match, visited)) {
-                match[col] = row;  // atribui a coluna 'col' à linha 'row'
+// 2° ETAPA DO ALGORÍTIMO - REALIZAR E VERIFICAR DESIGAÇÃO
+
+// BUSCA VIA DFS PARA ATRIBUIÇÃO DE UMA COLUNA PARA LINHA
+int dfs(int linha, int tam, int **matriz, int *linhasdesignadas, int *colunasvisitadas) {
+    for (int coluna = 0; coluna < tam; coluna++) {
+        
+        if (matriz[linha][coluna] == 0 && !colunasvisitadas[coluna]) {
+            colunasvisitadas[coluna] = 1;  // MARCA AS COLUNAS VISITADAS COM 1
+            
+            if (linhasdesignadas[coluna] == -1 || dfs(linhasdesignadas[coluna], tam, matriz, linhasdesignadas, colunasvisitadas)) {
+                linhasdesignadas[coluna] = linha;  // ATRIBUI A COLUNA À LINHA
                 return 1;
             }
         }
@@ -72,59 +59,45 @@ int dfs(int row, int tam, int **matriz, int *match, int *visited) {
     return 0;
 }
 
-/*
-   Função verif_designacao – tenta encontrar uma atribuição ótima dos zeros usando
-   um algoritmo de casamento bipartido. Se for possível designar uma coluna (com zero)
-   para cada linha, retorna 1; caso contrário, retorna 0.
-   
-   Parâmetros:
-   - matriz: matriz quadrada de inteiros (geralmente o resultado de operações prévias do método húngaro).
-   - tam: dimensão da matriz.
-   - designados: vetor de tamanho 'tam' que, ao final, conterá, para cada linha i, o índice da coluna designada
-     (ou -1 se a linha não tiver sido atribuída).
-*/
-int verif_designacao(int **matriz, int tam, int *designados) {
-    // Inicializa o vetor de designações para as linhas com -1 (nenhuma designação)
+int verif_designacao(int **matriz, int tam, int *designados) {//TENTA FAZER UMA ATRIBUIÇÃO ÓTIMA
     for (int i = 0; i < tam; i++) {
         designados[i] = -1;
     }
-    
-    // Vetor 'match' para as colunas: match[j] guarda a linha atualmente designada à coluna j
-    int *match = malloc(tam * sizeof(int));
-    if (match == NULL) {
+    // VETOR guarda[j] GUARDA A LINHA ATUALMENTE DESIGNADA À COLUNA j
+    int *guarda = malloc(tam * sizeof(int));
+    if (guarda == NULL) {
         printf("Erro de alocacao.\n");
         return 0;
     }
     for (int j = 0; j < tam; j++) {
-        match[j] = -1;
+        guarda[j] = -1;
     }
     
-    int matchingCount = 0;  // contador de linhas que foram atribuídas
+    int contalinhas = 0;  // CONTADOR DE LINHAS ATRIBUIDAS
     
-    // Para cada linha, tenta encontrar (via DFS) uma coluna com zero que possa ser atribuída
-    for (int row = 0; row < tam; row++) {
-        // Vetor para marcar quais colunas já foram visitadas nesta iteração
-        int *visited = calloc(tam, sizeof(int));
-        if (visited == NULL) {
+    // PARA CADA LINHA, TENTA ENCONTRAR UMA COLUNA COM ZERO QUE POSSA SER ATRIBUÍDA
+    for (int linha = 0; linha < tam; linha++) {
+        // VETOR PARA MARCAR QUAIS COLUNAS JÁ FORAM VISITADAS 
+        int *visitados = calloc(tam, sizeof(int));
+        if (visitados == NULL) {
             printf("Erro de alocacao.\n");
-            free(match);
+            free(guarda);
             return 0;
         }
-        if (dfs(row, tam, matriz, match, visited)) {
-            matchingCount++;
+        if (dfs(linha, tam, matriz, guarda, visitados)) {
+            contalinhas++;
         }
-        free(visited);
+        free(visitados);
     }
     
-    // Se o casamento máximo encontrou uma designação para todas as linhas, inverte o mapeamento
-    // para que designados[i] seja a coluna atribuída à linha i.
+    // SE O CASAMENTO MÁXIMO ENCONTROU UMA DESIGNAÇÃO PARA TODAS AS LINHAS, INVERTE O MAPEAMENTO, PARA QUE designados[i] SEJA A COLUNA ATRIBUÍDA À LINHA i
     for (int col = 0; col < tam; col++) {
-        if (match[col] != -1) {
-            designados[match[col]] = col;
+        if (guarda[col] != -1) {
+            designados[guarda[col]] = col;
         }
     }
     
-    /* Imprime os endereços (índices) dos zeros designados (-1 indica que a linha não foi atribuída)
+    /* IMPRIMINDO O ENDEREÇO DOS ZEROS DESIGINADOS (-1 não tem designação)
     printf("\nEndereco dos zeros designados: ");
     for (int i = 0; i < tam; i++) {
         printf("%d ", designados[i]);
@@ -132,23 +105,23 @@ int verif_designacao(int **matriz, int tam, int *designados) {
     printf("\n\n");
     */
     
-    free(match);
+    free(guarda);
     
-    // Se conseguimos designar todas as linhas, retorna 1; caso contrário, retorna 0.
-    if (matchingCount == tam)
+    if (contalinhas == tam)
         return 1;
     else
         return 0;
 }
 
-
 // 3° ETAPA DO ALGORÍTIMO - REDUÇÃO ADICIONAL DA MATRIZ
+
 void cobrimento(int **matriz, int tam, int *designados){
 
-    int linhasMarcadas[tam], colunasMarcadas[tam];
-    for(int i = 0; i<tam;i++){
-        linhasMarcadas[i] = 0;
-        colunasMarcadas[i] = 0;
+    int *linhasMarcadas = (int*)calloc(tam, sizeof(int));
+    int *colunasMarcadas =(int*)calloc(tam, sizeof(int));
+    if(linhasMarcadas == NULL || colunasMarcadas == NULL){
+        printf("Erro de alocação\n");
+        return;
     }
     
     // MARCAR LINHAS SEM NENHUM ZERO DESIGNADO
@@ -159,13 +132,13 @@ void cobrimento(int **matriz, int tam, int *designados){
     while(1){ // ESSSES PASSOS VÃO SE REPETIR ATE QUE NÃO HAJA NADA MAIS A SER MARCADO
    
     // MARCAR COLUNAS COM ZEROS NÃO DESIGNADO
-    int ctd1 = 0, ctd2 = 0;
+    int ctd = 0;
     for(int i = 0; i<tam; i++){
         if(linhasMarcadas[i] == 1){
             for(int j = 0; j<tam;j++){
                 if(matriz[i][j] == 0 && designados[i] != j && colunasMarcadas[j] != 1){
                     colunasMarcadas[j] = 1;
-                    ctd1++;
+                    ctd++;
                 }
             }
         }
@@ -176,12 +149,12 @@ void cobrimento(int **matriz, int tam, int *designados){
             for(int i = 0; i<tam; i++){
                 if(designados[i] == j && linhasMarcadas[i] != 1){
                     linhasMarcadas[i] = 1;
-                    ctd2++;
+                    ctd++;
                     }
                  }
              }
          }
-         if(ctd1 == 0 && ctd2==0) break;
+         if(ctd==0) break;
     }
 
     /* EXIBINDO LINHAS E COLUNAS MARCADAS
@@ -197,7 +170,7 @@ void cobrimento(int **matriz, int tam, int *designados){
     */
 
     // ENCONTRANDO MENOR VALOR MARCADO NA MATRIZ 
-    int menorValor = INT_MAX; //gambiarra
+    int menorValor = INT_MAX; 
     for(int i = 0; i<tam; i++){
         if(linhasMarcadas[i] == 1){
             for(int j = 0; j<tam;j++){
@@ -228,7 +201,9 @@ void cobrimento(int **matriz, int tam, int *designados){
             }
         }
     }
-    /*exibindo a matriz resultante
+    free(linhasMarcadas);
+    free(colunasMarcadas);
+    /*EXIBINDO A MATRIZ RESULTANTE
     for(int i = 0; i<tam; i++){
         for(int j = 0; j<tam;j++){
             printf("%d ", matriz[i][j]);
@@ -239,7 +214,7 @@ void cobrimento(int **matriz, int tam, int *designados){
 
 int main(){
     //ABRINDO ARQUIVO
-    FILE *arquivo = fopen("../assign600.txt","r");
+    FILE *arquivo = fopen("../assignp1500.txt","r");
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return 1;
@@ -249,15 +224,26 @@ int main(){
     int tam;
     fscanf(arquivo, "%d", &tam);
     
-    //ALOCANDO ESPACO DINAMICAMENTE PRA MATRIZ A SER LIDA DO ARQUIVO
-    int **pontmat;
-    pontmat = (int**)malloc(tam*sizeof(int*));
-    for (int i = 0; i<tam; i++){
-        pontmat[i]=malloc(tam*sizeof(int));
+    //ALOCANDO ESPACO DINAMICAMENTE PARA A MATRIZ A SER LIDA DO ARQUIVO E UMA CÓPIA DELA
+    int **pontmat = (int**)calloc(tam, sizeof(int*));
+    int **matrizCopia = (int**)calloc(tam, sizeof(int*));
+
+    if(pontmat == NULL || matrizCopia == NULL){
+        printf("Erro de alocacao\n");
+        return -1;
     }
 
-    //LENDO, MOSTRANDO MATRIZ DO ARQUIVO E CRIANDO UMA CÓPIA ESTÁTICA DESSA MATRIZ
-    int matrizCopia[tam][tam];
+    for (int i = 0; i<tam; i++){
+        pontmat[i]=calloc(tam, sizeof(int));
+        matrizCopia[i]=calloc(tam, sizeof(int));
+
+        if(pontmat[i] == NULL || matrizCopia[i] == NULL){
+            printf("Erro de alocacao\n");
+            return -1;
+        } 
+    }
+
+    //LENDO, MOSTRANDO MATRIZ DO ARQUIVO E ATRIBUINDO VALORES A CÓPIA DESSA MATRIZ
     //printf("Matriz lida:\n");
     for (int i = 0; i<tam; i++){
         for (int j = 0; j<tam; j++){
@@ -271,28 +257,34 @@ int main(){
     //CHAMANDO A ETAPA 1
     subtraimatriz(pontmat,tam);
 
-    //CHAMANDO A ETAPA DOIS E A TRÊS
+    //CHAMANDO A ETAPA 2 E 3
     int *zerosDesignados = (int*) malloc(tam*sizeof(int)); //endereço dos zeros designados
+    if(zerosDesignados == NULL){
+        printf("Erro de alocacao\n");
+        return -1;
+    }
     
     while(verif_designacao(pontmat, tam, zerosDesignados)==0){ // a ideia é que enquanto a designação não funcione, ele reduza mais
         cobrimento(pontmat, tam, zerosDesignados);
     }
     
     // SOMANDO OS TEMPOS COM O ENDEREÇO DAS DESIGNAÇÕES
-    int somaTempo = 0;
+    long int somaTempo = 0;
     for(int i = 0; i<tam;i++){
         if(zerosDesignados[i] == -1)somaTempo += 0;
         else somaTempo += matrizCopia[i][zerosDesignados[i]]; 
     }
-
+    
     // EXIBINDO A SOMA TOTAL DE UNIDADES DE TEMPO
-    printf("Resultado: %d\n", somaTempo);
+    printf("Resultado: %ld\n", somaTempo);
 
-    //LIBERANDO MEMORIA ALOCADA PARA A MATRIZ E ARRAYS
+    //LIBERANDO MEMÓRIA ALOCADA PARA A MATRIZ E ARRAYS
     for (int i = 0; i<tam; i++){
         free(pontmat[i]);
+        free(matrizCopia[i]);
     }
     free(pontmat);
+    free(matrizCopia);
     free(zerosDesignados);
     
     //FECHANDO ARQUIVO
