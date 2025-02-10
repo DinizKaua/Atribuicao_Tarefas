@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 // 1° ETAPA DO ALGORÍTIMO - CONSISTE EM REDUZIR A MATRIZ
-
 void subtraimatriz(int **matriz, int tam){
     //ENCONTRAR O MENOR ELEMENTO EM CADA LINHA
     for (int i = 0; i <tam; i++){
@@ -49,7 +48,7 @@ int dfs(int linha, int tam, int **matriz, int *linhasdesignadas, int *colunasvis
         
         if (matriz[linha][coluna] == 0 && !colunasvisitadas[coluna]) {
             colunasvisitadas[coluna] = 1;  // MARCA AS COLUNAS VISITADAS COM 1
-            
+            // SE A LINHA ESTIVER DESIGNADA ELE PROCURA OUTRA QUE POSSA DESIGNAR
             if (linhasdesignadas[coluna] == -1 || dfs(linhasdesignadas[coluna], tam, matriz, linhasdesignadas, colunasvisitadas)) {
                 linhasdesignadas[coluna] = linha;  // ATRIBUI A COLUNA À LINHA
                 return 1;
@@ -120,7 +119,7 @@ void cobrimento(int **matriz, int tam, int *designados){
     int *linhasMarcadas = (int*)calloc(tam, sizeof(int));
     int *colunasMarcadas =(int*)calloc(tam, sizeof(int));
     if(linhasMarcadas == NULL || colunasMarcadas == NULL){
-        printf("Erro de alocação\n");
+        printf("Erro de alocacao.\n");
         return;
     }
     
@@ -214,7 +213,7 @@ void cobrimento(int **matriz, int tam, int *designados){
 
 int main(){
     //ABRINDO ARQUIVO
-    FILE *arquivo = fopen("../assignp1500.txt","r");
+    FILE *arquivo = fopen("assign800.txt","r");
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return 1;
@@ -229,7 +228,8 @@ int main(){
     int **matrizCopia = (int**)calloc(tam, sizeof(int*));
 
     if(pontmat == NULL || matrizCopia == NULL){
-        printf("Erro de alocacao\n");
+        printf("Erro de alocacao.\n");
+        fclose(arquivo);
         return -1;
     }
 
@@ -239,6 +239,7 @@ int main(){
 
         if(pontmat[i] == NULL || matrizCopia[i] == NULL){
             printf("Erro de alocacao\n");
+            fclose(arquivo);
             return -1;
         } 
     }
